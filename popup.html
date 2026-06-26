@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>Moodle Task Hider</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+  <h1>非表示にした課題</h1>
+  <div id="empty" class="empty" hidden>非表示にした課題はありません。</div>
+  <ul id="list"></ul>
+  <template id="item-template">
+    <li class="item">
+      <div class="item-label"></div>
+      <button type="button" class="restore-btn">復元</button>
+    </li>
+  </template>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 (() => {
   const STORAGE_KEY = "hiddenTasks";
   const PROCESSED_ATTR = "data-mth-processed";
+  const HEADING_RE = /^\d{4}年\s*\d{1,2}月\s*\d{1,2}日/;
 
   // Moodleのダッシュボード/タイムラインに使われる代表的なセレクタ
   const ITEM_SELECTORS = [
@@ -53,9 +54,69 @@
     el.classList.toggle("mth-hidden", hiddenKeys.has(key));
   };
 
+  // 見出し（「2026年 06月 17日(水曜日)」など）の直下にある課題が
+  // すべて非表示になった場合は見出し自体も非表示にする
+  const isHeadingEl = (el) =>
+    el.children.length === 0 && HEADING_RE.test(el.textContent.trim());
+
+  const findHeadingRoot = (items) => {
+    let node = items[0];
+    for (let i = 0; i < 8 && node.parentElement; i++) {
+      node = node.parentElement;
+      const matches = node.textContent.match(new RegExp(HEADING_RE, "g"));
+      if (matches && matches.length >= 2) return node;
+    }
+    return node;
+  };
+
+  const updateHeadings = () => {
+    const items = Array.from(
+      document.querySelectorAll(ITEM_SELECTORS.join(","))
+    );
+    if (items.length === 0) return;
+    const root = findHeadingRoot(items);
+    if (!root) return;
+
+    const itemSet = new Set(items);
+    const all = root.querySelectorAll("*");
+
+    let currentHeading = null;
+    let currentItems = [];
+    const sections = [];
+
+    all.forEach((el) => {
+      if (itemSet.has(el)) {
+        if (currentHeading) currentItems.push(el);
+        return;
+      }
+      if (isHeadingEl(el)) {
+        if (currentHeading) {
+          sections.push({ heading: currentHeading, items: currentItems });
+        }
+        currentHeading = el;
+        currentItems = [];
+      }
+    });
+    if (currentHeading) {
+      sections.push({ heading: currentHeading, items: currentItems });
+    }
+
+    sections.forEach(({ heading, items: sectionItems }) => {
+      if (sectionItems.length === 0) return;
+      const allHidden = sectionItems.every((it) =>
+        it.classList.contains("mth-hidden")
+      );
+      heading.classList.toggle("mth-hidden", allHidden);
+    });
+  };
+
   const processItem = async (el) => {
     if (el.getAttribute(PROCESSED_ATTR)) return;
     el.setAttribute(PROCESSED_ATTR, "1");
+
+    if (getComputedStyle(el).position === "static") {
+      el.style.position = "relative";
+    }
 
     const btn = document.createElement("button");
     btn.type = "button";
@@ -89,6 +150,7 @@
 
       await hideTask(key, label, url);
       el.classList.add("mth-hidden");
+      updateHeadings();
     },
     true
   );
@@ -102,6 +164,7 @@
         processItem(el);
       });
     });
+    updateHeadings();
   };
 
   scan();
@@ -119,5 +182,6 @@
     document
       .querySelectorAll(ITEM_SELECTORS.join(","))
       .forEach((el) => applyHiddenState(el, hiddenKeys));
+    updateHeadings();
   });
 })();

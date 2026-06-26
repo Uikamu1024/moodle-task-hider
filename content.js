@@ -57,22 +57,11 @@
     if (el.getAttribute(PROCESSED_ATTR)) return;
     el.setAttribute(PROCESSED_ATTR, "1");
 
-    const key = getTaskKey(el);
-    const label = getTaskLabel(el);
-    const link = el.querySelector("a[href]");
-    const url = link ? link.href : "";
-
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "mth-hide-btn";
     btn.title = "この課題を非表示にする";
     btn.textContent = "×";
-    btn.addEventListener("click", async (e) => {
-      e.preventDefault();
-      e.stopPropagation();
-      await hideTask(key, label, url);
-      el.classList.add("mth-hidden");
-    });
 
     el.appendChild(btn);
 
@@ -80,6 +69,29 @@
     const hiddenKeys = new Set(hidden.map((t) => t.key));
     applyHiddenState(el, hiddenKeys);
   };
+
+  // ボタンを個別にバインドせず、document側で委譲することで
+  // Moodle側のDOM再構築によるイベントリスナー消失を防ぐ
+  document.addEventListener(
+    "click",
+    async (e) => {
+      const btn = e.target.closest(".mth-hide-btn");
+      if (!btn) return;
+      const el = btn.closest(ITEM_SELECTORS.join(","));
+      if (!el) return;
+      e.preventDefault();
+      e.stopPropagation();
+
+      const key = getTaskKey(el);
+      const label = getTaskLabel(el);
+      const link = el.querySelector("a[href]");
+      const url = link ? link.href : "";
+
+      await hideTask(key, label, url);
+      el.classList.add("mth-hidden");
+    },
+    true
+  );
 
   const scan = () => {
     const seen = new Set();

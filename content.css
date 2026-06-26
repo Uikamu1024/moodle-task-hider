@@ -3,6 +3,8 @@
 }
 
 .mth-hide-btn {
+  position: relative;
+  z-index: 2147483647;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -18,6 +20,7 @@
   cursor: pointer;
   user-select: none;
   flex-shrink: 0;
+  pointer-events: auto;
 }
 
 .mth-hide-btn:hover {
